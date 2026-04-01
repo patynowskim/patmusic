@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
 import 'audio_provider.dart';
+import 'equalizer_sheet.dart';
 
 class AudioEffectsSheet extends StatelessWidget {
   const AudioEffectsSheet({super.key});
@@ -35,86 +36,188 @@ class AudioEffectsSheet extends StatelessWidget {
             ],
           ),
           const SizedBox(height: 16),
-          Consumer<AudioProvider>(
-            builder: (context, provider, child) {
-              return SwitchListTile(
-                contentPadding: EdgeInsets.zero,
-                title: const Text('Magic Autoplay Queue'),
-                subtitle: const Text('Play similar songs when queue ends'),
-                value: provider.isAutoPlayEnabled,
-                onChanged: (val) {
-                  provider.toggleAutoPlay(val);
-                },
-              );
-            },
-          ),
-          const Divider(),
-          const SizedBox(height: 16),
-          if (kIsWeb)
-            Container(
-              padding: const EdgeInsets.all(16),
-              decoration: BoxDecoration(
-                color: theme.colorScheme.errorContainer.withValues(alpha: 0.2),
-                borderRadius: BorderRadius.circular(12),
-                border: Border.all(color: theme.colorScheme.error.withValues(alpha: 0.5)),
-              ),
-              child: Row(
+          Flexible(
+            child: SingleChildScrollView(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Icon(Icons.warning_amber_rounded, color: theme.colorScheme.error),
-                  const SizedBox(width: 16),
-                  const Expanded(
-                    child: Text(
-                      'Advanced audio effects (Pitch, EQ, Speed) are currently not supported computationally in the web browser. Please use the Desktop or Android app.',
-                      style: TextStyle(height: 1.4),
-                    ),
-                  ),
-                ],
-              ),
-            )
-          else
-            Consumer<AudioProvider>(
-              builder: (context, audio, _) => Column(
-                children: [
-                  _buildEffectSlider(
-                    context,
-                    title: 'Playback Speed',
-                    value: audio.speed,
-                    min: 0.5,
-                    max: 2.0,
-                    divisions: 60,
-                    label: '${audio.speed.toStringAsFixed(1)}x',
-                    onChanged: (val) => audio.setSpeed(val),
-                    onReset: () => audio.setSpeed(1.0),
-                    icon: Icons.speed,
-                  ),
-                  const SizedBox(height: 24),
-                  _buildEffectSlider(
-                    context,
-                    title: 'Pitch Shift',
-                    value: audio.pitch,
-                    min: 0.5,
-                    max: 2.0,
-                    divisions: 60,
-                    label: audio.pitch.toStringAsFixed(1),
-                    onChanged: (val) => audio.setPitch(val),
-                    onReset: () => audio.setPitch(1.0),
-                    icon: Icons.music_note,
-                  ),
-                  const SizedBox(height: 24),
-                  // Placeholder for future Equalizer button/sliders
-                  ListTile(
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                    tileColor: theme.colorScheme.surfaceContainerHighest.withValues(alpha: 0.3),
-                    leading: const Icon(Icons.equalizer),
-                    title: const Text('Equalizer'),
-                    trailing: const Text('Coming Soon', style: TextStyle(color: Colors.grey)),
-                    onTap: () {
-                      // Future deployment
+                  Consumer<AudioProvider>(
+                    builder: (context, provider, child) {
+                      return SwitchListTile(
+                        contentPadding: EdgeInsets.zero,
+                        title: const Text('Magic Autoplay Queue'),
+                        subtitle: const Text('Play similar songs when queue ends'),
+                        value: provider.isAutoPlayEnabled,
+                        onChanged: (val) {
+                          provider.toggleAutoPlay(val);
+                        },
+                      );
                     },
+                  ),
+                  const Divider(),
+                  const SizedBox(height: 16),
+                  Consumer<AudioProvider>(
+                    builder: (context, audio, _) => Column(
+                      children: [
+                _buildEffectSlider(
+                  context,
+                  title: 'Volume',
+                  value: audio.volume,
+                  min: 0.0,
+                  max: 100.0,
+                  divisions: 100,
+                  label: '${audio.volume.toInt()}%',
+                  onChanged: (val) => audio.setVolume(val),
+                  onReset: () => audio.setVolume(100.0),
+                  icon: Icons.volume_up,
+                  defaultValue: 100.0,
+                ),
+                const SizedBox(height: 24),
+                _buildEffectSlider(
+                  context,
+                  title: 'Playback Speed',
+                  value: audio.speed,
+                  min: 0.5,
+                  max: 2.0,
+                  divisions: 60,
+                  label: '${audio.speed.toStringAsFixed(1)}x',
+                  onChanged: (val) => audio.setSpeed(val),
+                  onReset: () => audio.setSpeed(1.0),
+                  icon: Icons.speed,
+                  defaultValue: 1.0,
+                ),
+                const SizedBox(height: 24),
+                _buildEffectSlider(
+                  context,
+                  title: 'Pitch Shift',
+                  value: audio.pitch,
+                  min: 0.5,
+                  max: 2.0,
+                  divisions: 60,
+                  label: audio.pitch.toStringAsFixed(1),
+                  onChanged: (val) => audio.setPitch(val),
+                  onReset: () => audio.setPitch(1.0),
+                  icon: Icons.music_note,
+                  defaultValue: 1.0,
+                ),
+                const SizedBox(height: 24),
+                _buildEffectSlider(
+                  context,
+                  title: 'Bass Boost',
+                  value: audio.bass,
+                  min: 0.0,
+                  max: 15.0,
+                  divisions: 30,
+                  label: '+${audio.bass.toStringAsFixed(1)}dB',
+                  onChanged: (val) => audio.setBass(val),
+                  onReset: () => audio.setBass(0.0),
+                  icon: Icons.speaker,
+                  defaultValue: 0.0,
+                ),
+                const SizedBox(height: 24),
+                _buildEffectSlider(
+                  context,
+                  title: 'Treble Boost',
+                  value: audio.treble,
+                  min: 0.0,
+                  max: 15.0,
+                  divisions: 30,
+                  label: '+${audio.treble.toStringAsFixed(1)}dB',
+                  onChanged: (val) => audio.setTreble(val),
+                  onReset: () => audio.setTreble(0.0),
+                  icon: Icons.graphic_eq,
+                  defaultValue: 0.0,
+                ),
+                const SizedBox(height: 24),
+                _buildEffectSlider(
+                  context,
+                  title: 'Echo/Reverb',
+                  value: audio.echo,
+                  min: 0.0,
+                  max: 1.0,
+                  divisions: 10,
+                  label: '${(audio.echo * 100).toInt()}%',
+                  onChanged: (val) => audio.setEcho(val),
+                  onReset: () => audio.setEcho(0.0),
+                  icon: Icons.surround_sound,
+                  defaultValue: 0.0,
+                ),
+                const SizedBox(height: 24),
+                _buildEffectSlider(
+                  context,
+                  title: '3D Stereo Widen',
+                  value: audio.stereoWiden,
+                  min: 1.0,
+                  max: 5.0,
+                  divisions: 40,
+                  label: '${((audio.stereoWiden - 1.0) / 4.0 * 100).toInt()}%',
+                  onChanged: (val) => audio.setStereoWiden(val),
+                  onReset: () => audio.setStereoWiden(1.0),
+                  icon: Icons.headphones,
+                  defaultValue: 1.0,
+                ),
+                const SizedBox(height: 16),
+                SwitchListTile(
+                  contentPadding: EdgeInsets.zero,
+                  secondary: const Icon(Icons.mic_off),
+                  title: const Text('Karaoke (Vocal Remover)'),
+                  subtitle: const Text('Inverts center stereo channel'),
+                  value: audio.karaoke,
+                  onChanged: (val) => audio.toggleKaraoke(val),
+                ),
+                SwitchListTile(
+                  contentPadding: EdgeInsets.zero,
+                  secondary: const Icon(Icons.bolt),
+                  title: const Text('Nightcore Preset'),
+                  subtitle: const Text('Quick 1.25x Speed + Pitch boost'),
+                  value: audio.nightcore,
+                  onChanged: (val) => audio.toggleNightcore(val),
+                ),
+                
+                if (kIsWeb) ...[
+                  const SizedBox(height: 16),
+                  Container(
+                    padding: const EdgeInsets.all(12),
+                    decoration: BoxDecoration(
+                      color: theme.colorScheme.surfaceContainerHighest.withValues(alpha: 0.5),
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    child: Row(
+                      children: [
+                        Icon(Icons.info_outline, size: 20, color: theme.colorScheme.onSurfaceVariant),
+                        const SizedBox(width: 8),
+                        Expanded(
+                          child: Text(
+                            'Unsupported effects safely fallback to nearest browser capabilities.',
+                            style: TextStyle(color: theme.colorScheme.onSurfaceVariant, fontSize: 12),
+                          ),
+                        ),
+                      ],
+                    ),
                   )
+                ],
+
+                const SizedBox(height: 24),
+                // Placeholder for future Equalizer button/sliders
+                ListTile(
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                  tileColor: theme.colorScheme.surfaceContainerHighest.withValues(alpha: 0.3),
+                  leading: const Icon(Icons.equalizer),
+                  title: const Text('Advanced Equalizer'),
+                  trailing: const Icon(Icons.chevron_right),
+                  onTap: () {
+                    Navigator.pop(context);
+                    showEqualizerSheet(context);
+                  },
+                ),
+                const SizedBox(height: 24),
+              ],
+            ),
+          ),
                 ],
               ),
             ),
+          ),
         ],
       ),
     );
@@ -131,6 +234,7 @@ class AudioEffectsSheet extends StatelessWidget {
     required ValueChanged<double> onChanged,
     required VoidCallback onReset,
     required IconData icon,
+    required double defaultValue,
   }) {
     return Row(
       crossAxisAlignment: CrossAxisAlignment.center,
@@ -171,7 +275,7 @@ class AudioEffectsSheet extends StatelessWidget {
           icon: const Icon(Icons.refresh),
           tooltip: 'Reset to default',
           onPressed: onReset,
-          color: value != 1.0 ? Theme.of(context).colorScheme.primary : Colors.grey,
+          color: value != defaultValue ? Theme.of(context).colorScheme.primary : Colors.grey,
         ),
       ],
     );

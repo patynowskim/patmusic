@@ -13,33 +13,70 @@ class SongsScreen extends StatefulWidget {
 }
 
 class _SongsScreenState extends State<SongsScreen> {
-  List<Song>? _songs;
+  final List<Song> _songs = [];
+  final ScrollController _scrollController = ScrollController();
   bool _isLoading = true;
+  bool _isLoadingMore = false;
   String? _error;
 
   @override
   void initState() {
     super.initState();
     _loadSongs();
+    _scrollController.addListener(_onScroll);
+  }
+
+  @override
+  void dispose() {
+    _scrollController.dispose();
+    super.dispose();
+  }
+
+  void _onScroll() {
+    if (_scrollController.position.pixels >= _scrollController.position.maxScrollExtent - 500 &&
+        !_isLoading &&
+        !_isLoadingMore) {
+      _loadMoreSongs();
+    }
   }
 
   Future<void> _loadSongs() async {
     setState(() {
       _isLoading = true;
       _error = null;
+      _songs.clear();
     });
 
     try {
       final subsonicService = context.read<SubsonicService>();
-      final songs = await subsonicService.getRandomSongs(size: 50);
+      final songs = await subsonicService.getRandomSongs(size: 100);
       setState(() {
-        _songs = songs;
+        _songs.addAll(songs);
         _isLoading = false;
       });
     } catch (e) {
       setState(() {
         _error = e.toString();
         _isLoading = false;
+      });
+    }
+  }
+
+  Future<void> _loadMoreSongs() async {
+    setState(() {
+      _isLoadingMore = true;
+    });
+
+    try {
+      final subsonicService = context.read<SubsonicService>();
+      final moreSongs = await subsonicService.getRandomSongs(size: 50);
+      setState(() {
+        _songs.addAll(moreSongs);
+        _isLoadingMore = false;
+      });
+    } catch (e) {
+      setState(() {
+        _isLoadingMore = false;
       });
     }
   }
@@ -64,7 +101,7 @@ class _SongsScreenState extends State<SongsScreen> {
         ),
       );
     }
-    if (_songs == null || _songs!.isEmpty) {
+    if (_songs.isEmpty) {
       return const Center(child: Text('No songs found.'));
     }
 
@@ -73,9 +110,16 @@ class _SongsScreenState extends State<SongsScreen> {
     return RefreshIndicator(
       onRefresh: _loadSongs,
       child: ListView.builder(
-        itemCount: _songs!.length,
+        controller: _scrollController,
+        itemCount: _songs.length + (_isLoadingMore ? 1 : 0),
         itemBuilder: (context, index) {
-          final song = _songs![index];
+          if (index == _songs.length) {
+            return const Padding(
+              padding: EdgeInsets.all(16.0),
+              child: Center(child: CircularProgressIndicator()),
+            );
+          }
+          final song = _songs[index];
           final isCurrentSong = audioProvider.currentSong?.id == song.id;
 
           return ListTile(

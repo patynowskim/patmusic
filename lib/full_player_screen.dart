@@ -190,46 +190,55 @@ class _FullPlayerScreenState extends State<FullPlayerScreen> {
         ],
       ),
       extendBodyBehindAppBar: true,
-      body: Stack(
-        fit: StackFit.expand,
-        children: [
-          // Blurred Background
-          Image.network(
-            coverArtUrl,
-            fit: BoxFit.cover,
-            errorBuilder: (_, _, _) =>
-                const Center(child: Icon(Icons.music_note)),
-          ),
-          BackdropFilter(
-            filter: ImageFilter.blur(sigmaX: 80.0, sigmaY: 80.0),
-            child: Container(color: Colors.black.withOpacity(0.7)),
-          ),
-          Container(
-            decoration: BoxDecoration(
-              gradient: LinearGradient(
-                begin: Alignment.topCenter,
-                end: Alignment.bottomCenter,
-                colors: [
-                  Colors.black.withOpacity(0.5),
-                  Colors.transparent,
-                  Colors.black.withOpacity(0.8),
-                ],
-                stops: const [0.0, 0.4, 1.0],
+      body: GestureDetector(
+        onVerticalDragUpdate: (details) {
+          if (details.primaryDelta != null && details.primaryDelta! > 15) {
+            Navigator.of(context).maybePop();
+          }
+        },
+        child: Stack(
+          fit: StackFit.expand,
+          children: [
+            // Blurred Background
+            Image.network(
+              coverArtUrl,
+              fit: BoxFit.cover,
+              errorBuilder: (_, _, _) =>
+                  const Center(child: Icon(Icons.music_note)),
+            ),
+            BackdropFilter(
+              filter: ImageFilter.blur(sigmaX: 80.0, sigmaY: 80.0),
+              child: Container(color: Colors.black.withOpacity(0.7)),
+            ),
+            Container(
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  begin: Alignment.topCenter,
+                  end: Alignment.bottomCenter,
+                  colors: [
+                    Colors.black.withOpacity(0.5),
+                    Colors.transparent,
+                    Colors.black.withOpacity(0.8),
+                  ],
+                  stops: const [0.0, 0.4, 1.0],
+                ),
               ),
             ),
-          ),
 
-          SafeArea(
-            child: LayoutBuilder(
-              builder: (context, constraints) {
-                if (constraints.maxWidth > 800) {
-                  return _buildWideLayout(context, audioProvider, coverArtUrl);
-                }
-                return _buildNarrowLayout(context, audioProvider, coverArtUrl);
-              },
+            SafeArea(
+              child: LayoutBuilder(
+                builder: (context, constraints) {
+                  if (constraints.maxWidth > 800) {
+                    return _buildWideLayout(
+                        context, audioProvider, coverArtUrl);
+                  }
+                  return _buildNarrowLayout(
+                      context, audioProvider, coverArtUrl);
+                },
+              ),
             ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }
@@ -493,10 +502,11 @@ class _FullPlayerScreenState extends State<FullPlayerScreen> {
             _lastActiveLyricIndex = activeIndex;
             WidgetsBinding.instance.addPostFrameCallback((_) {
               if (_lyricsScrollController.hasClients) {
-                // Determine a roughly centered offset based on 60px per line
-                final double targetOffset =
-                    (activeIndex * 60.0) -
-                    (MediaQuery.of(context).size.height * 0.15);
+                // Approximate item height is ~45-50.
+                final double targetOffset = (activeIndex * 48.0) -
+                    (MediaQuery.of(context).size.height * 0.15) +
+                    50.0; // Account for top padding offset
+
                 _lyricsScrollController.animateTo(
                   targetOffset.clamp(
                     0.0,
@@ -511,26 +521,32 @@ class _FullPlayerScreenState extends State<FullPlayerScreen> {
 
           return ListView.builder(
             controller: _lyricsScrollController,
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 32),
+            padding: const EdgeInsets.only(
+              left: 16,
+              right: 16,
+              top: 100, // Make the first lines appear a bit lower
+              bottom: 300, // Make the bottom lyrics not hide mostly
+            ),
             itemCount: lines.length,
             itemBuilder: (context, index) {
               final line = lines[index];
               final isActive = index == activeIndex;
-              final isPast = index < activeIndex;
 
               return Padding(
                 padding: const EdgeInsets.symmetric(vertical: 8.0),
-                child: Text(
-                  line['value'] ?? '',
+                child: AnimatedDefaultTextStyle(
+                  duration: const Duration(milliseconds: 300),
+                  curve: Curves.easeInOut,
                   style: TextStyle(
-                    fontSize: isActive ? 28 : (isPast ? 22 : 22),
+                    fontSize: isActive ? 28 : 22,
                     height: 1.4,
                     color: isActive
                         ? Colors.white
                         : Colors.white.withValues(alpha: 0.4),
-                    fontWeight: isActive ? FontWeight.bold : FontWeight.bold,
+                    fontWeight: FontWeight.bold,
                   ),
                   textAlign: TextAlign.center,
+                  child: Text(line['value'] ?? ''),
                 ),
               );
             },
